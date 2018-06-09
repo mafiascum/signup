@@ -1,0 +1,13 @@
+services:
+    mafiascum.signup.viewQueue:
+        class: mafiascum\signup\controller\viewQueue
+        arguments:
+            - '@request'
+            - '@user'
+            - '@dbal.conn'
+            - '@language'
+            - '@template'
+            - '@controller.helper'
+            - '@auth'
+            - '@template'
+
