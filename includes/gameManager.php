@@ -18,6 +18,10 @@ class gameManager{
 	protected $root_path;
 	/** @var string */
 	protected $php_ext;
+	/** @var \phpbb\db\driver\factory */
+	protected $template;
+	/** @var string */
+	protected $pagination;
 	/**
 	 * Constructor of the helper class.
 	 *
@@ -28,10 +32,12 @@ class gameManager{
 	 * @return void
 	 */
 
-	public function __construct(database $db, $root_path, $php_ext)
+	public function __construct(database $db, $root_path, $php_ext, $template, $pagination){
 		$this->db = $db;
 		$this->root_path = $root_path;
 		$this->php_ext = $php_ext;
+		$this->template = $template;
+		$this->pagination = $pagination;
 	}
 	public function createGame($userID, $gameName, $gameType, $main_mod, $requested_slots, $game_description = '', $altMods = ''){
 		$message = $game_description;
@@ -77,13 +83,12 @@ class gameManager{
 		} else if($queueID){
 			$where .= 'game_type = '.$queueID;
 			$params .= 'q='.$queueID;
-		} else if (sizeOf($gameID)) {
-			$ids = join(',',$gameIDs);
+		} else if (sizeOf($gameID) > 1) {
+			$ids = join(',',$gameID);
 			$where .= (empty($where)) ? 'g.game_id IN (' . $ids . ')' : ' AND g.game_id IN (' . $ids . ')' ;
 		} else if (!$allqueues) {
 			$where .= (empty($where)) ? '1=0' : ' AND 1=0' ;
 		}
-		
 		if($approval)
 		{
 			$where .= (empty($where)) ? 'approved_time IS NOT NULL' : ' AND approved_time IS NOT NULL';
@@ -119,7 +124,7 @@ class gameManager{
 		
 		// Build a SQL Query...
 		$sql_ary = array(
-			'SELECT'    =>  'g.* , c.username as game_creator_name, u.user_id as mod_user_id, u.username as mod_username, a.user_id as app_user_id, a.username as app_username, s.status_id, s.status_name, t.* ',
+			'SELECT'    =>  'g.* , c.username as game_creator_name, u.user_id as mod_user_id, u.username as mod_username, a.user_id as app_user_id, a.username as app_username, t.* ',
 			'FROM'      => array(MAFIA_GAMES_TABLE => 'g'),
 			'LEFT_JOIN'	=> array(
 				array(
@@ -128,9 +133,6 @@ class gameManager{
 				array(
 					'FROM'	=> array(USERS_TABLE => 'a'), //Approval mod user info.
 					'ON'	=> 'a.user_id = g.approved_by_user_id'),
-				array(
-					'FROM'	=> array(MAFIA_GAME_STATUS_TABLE => 's'), //Status info.
-					'ON'	=> 's.status_id = g.status'),
 				array(
 					'FROM'	=> array(MAFIA_GAME_TYPES_TABLE => 't'), //Type info.
 					'ON'	=> 't.type_id = g.game_type'),
@@ -169,11 +171,8 @@ class gameManager{
 			$count = $data2['num_games'];
 			$pagination_url = append_sid($this->root_path . 'viewqueue.' . $this->php_ext, $params);
 			// Assign the pagination variables to the template.
-			$template->assign_vars(array(
-				'PAGINATION'        => generate_pagination($pagination_url, $count, $limit, $start),
-				'PAGE_NUMBER'       => on_page($count, $limit, $start),
-				'TOTAL_GAMES'		=> $count,
-			));
+			
+			$this->pagination->generate_template_pagination($pagination_url, "pagination", 'start', $count, $limit, $start);
 		
 		
 		//Return the game dataset for other uses.
@@ -187,7 +186,7 @@ class gameManager{
 			return $data[0];
 		}
 	}
-	public function assignGameVars($template, $game, $block = false, $block_name = 'games'){
+	public function assignGameVars($game, $block = false, $block_name = 'games'){
 		if(!$block){
 			//build game type select element
 			$gameType = $game['game_type'];
@@ -221,10 +220,6 @@ class gameManager{
 			
 			$statusSelect = '<select id="gameInfoGameStatusInputField" name="gameInfoGameStatus" class="gameInfoLabel"';
 			$statusSelect .='>';
-			$sql = " SELECT *"
-				 . " FROM " . MAFIA_GAME_STATUS_TABLE;
-
-			$result = $this->db->sql_query($sql);
 			$statusOptions = $auth->acl_get('u_queue_'.$game['game_type']) ? 0 : 3;
 			while($row = $this->db->sql_fetchrow($result)){
 				if ($row['status_id'] >$statusOptions){
@@ -306,11 +301,11 @@ class gameManager{
 		);
 		if($block)
 		{
-			$template->assign_block_vars($block_name, $gamevars);
+			$this->template->assign_block_vars($block_name, $gamevars);
 		}
 		else
 		{
-			$template->assign_vars($gamevars);
+			$this->template->assign_vars($gamevars);
 		}
 	}
 	public function checkModLimits(){
@@ -536,7 +531,7 @@ class gameManager{
 				break;
 		}
 	}
-	public function setReplaceDateTemplate($template){
+	public function setReplaceDateTemplate(){
 		//Select the proper display date based on V/LA status. Select today's date if none specified.
 		$selectionDay = date('j');
 		$selectionMonth = date('n');
@@ -564,7 +559,7 @@ class gameManager{
 		}
 		unset($now);
 
-		$template->assign_vars(array(
+		$this->template->assign_vars(array(
 			'S_REPLACE_DAY_OPTIONS'	=> $s_replace_day_options,
 			'S_REPLACE_MONTH_OPTIONS'	=> $s_replace_month_options,
 			'S_REPLACE_YEAR_OPTIONS'	=> $s_replace_year_options,
@@ -699,7 +694,7 @@ class gameManager{
 			return false;
 		}
 	}
-	public function removeSignup($template, $gameID, $userID){
+	public function removeSignup($gameID, $userID){
 		$game = load_game(0, $gameID);
 
 	

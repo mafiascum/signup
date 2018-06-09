@@ -18,6 +18,10 @@ class queueDisplay{
 	protected $root_path;
 	/** @var string */
 	protected $php_ext;
+	/** @var \phpbb\db\driver\factory */
+	protected $template;
+	/** @var string */
+	protected $pagination;
 	/**
 	 * Constructor of the helper class.
 	 *
@@ -28,13 +32,15 @@ class queueDisplay{
 	 * @return void
 	 */
 
-	public function __construct(database $db, $root_path, $php_ext)
+	public function __construct(database $db, $root_path, $php_ext, $template, $pagination){
 		$this->db = $db;
 		$this->root_path = $root_path;
 		$this->php_ext = $php_ext;
+		$this->template = $template;
+		$this->pagination = $pagination;
 	}
-	public function buildQueueBreadCrumbs($template, $gameID, $queueID){
-		$template->assign_block_vars('navlinks', array(
+	public function buildQueueBreadCrumbs($gameID, $queueID){
+		$this->template->assign_block_vars('navlinks', array(
 					'FORUM_NAME'         => $user->lang['QUEUES'],
 					'U_VIEW_FORUM'      => append_sid("{$phpbb_root_path}viewqueue.$phpEx"))
 		);
@@ -55,12 +61,12 @@ class queueDisplay{
 				$this->db->sql_freeresult($res);
 			
 			//Assign queue breadcrumb.
-			$template->assign_block_vars('navlinks', array(
+			$this->template->assign_block_vars('navlinks', array(
 						'FORUM_NAME'         => sprintf($user->lang['SINGLE_QUEUE'], $game['type_name']),
 						'U_VIEW_FORUM'      => append_sid($phpbb_root_path.'viewqueue.'.$this->php_ext.'?q='.$game['type_id']))
 			);
 			//Assign game breadcrumb.
-			$template->assign_block_vars('navlinks', array(
+			$this->template->assign_block_vars('navlinks', array(
 						'FORUM_NAME'         => $game['name'],
 						'U_VIEW_FORUM'      => append_sid($phpbb_root_path.'viewgame.'.$this->php_ext.'?g='.$game['game_id']))
 			);
@@ -78,7 +84,7 @@ class queueDisplay{
 				$this->db->sql_freeresult($res);
 				
 			//Assign queue breadcrumb.
-			$template->assign_block_vars('navlinks', array(
+			$this->template->assign_block_vars('navlinks', array(
 						'FORUM_NAME'         => sprintf($user->lang['SINGLE_QUEUE'], $queue['type_name']),
 						'U_VIEW_FORUM'      => append_sid($phpbb_root_path.'viewqueue.'.$this->php_ext.'?q='.$queue['type_id']))
 			);

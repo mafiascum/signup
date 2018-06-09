@@ -2,7 +2,7 @@
 
 namespace mafiascum\signup\migrations;
 
-class singup extends \phpbb\db\migration\migration
+class signup extends \phpbb\db\migration\migration
 {
 
     public function effectively_installed()
@@ -42,7 +42,7 @@ class singup extends \phpbb\db\migration\migration
             'add_tables'    => array(
                 $this->table_prefix . 'mafia_games' => array(
                     'COLUMNS' => array(
-						'game_id'				=> array('UINT', NULL 'auto_increment'),
+						'game_id'				=> array('UINT', NULL, 'auto_increment'),
 						'name'					=> array('VCHAR:255', ''),
 						'description'			=> array('TEXT', ''),
 						'numbering'				=> array ('UINT', 0),
@@ -87,6 +87,7 @@ class singup extends \phpbb\db\migration\migration
 						'game_id'				=> array('UINT', NULL),
 						'user_id'				=> array('UINT', NULL),
 						'slot_id'				=> array('UINT', NULL),
+						'type'					=> array('UINT', NULL),
 						'replaced_player_id'	=> array('UINT', NULL),
                     ),
 					'PRIMARY_KEY' => 'player_id',
@@ -115,7 +116,7 @@ class singup extends \phpbb\db\migration\migration
 						'game_id' => array('INDEX', 'game_id'),
                     ),
                 ),
-				$this->table_prefix . 'mafia_factions' => array(
+				$this->table_prefix . 'mafia_game_types' => array(
                     'COLUMNS' => array(
 						'type_id'				=> array('UINT', NULL, 'auto_increment'),
 						'type_name'				=> array('VCHAR:80', ''),

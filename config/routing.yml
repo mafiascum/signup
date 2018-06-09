@@ -1,3 +1,6 @@
 view_queue_route:
-    path: /view_queue
+    path: /viewqueue.php
     defaults: { _controller: mafiascum.signup.viewQueue:handle }
+view_game_route:
+    path: /viewgame.php
+    defaults: { _controller: mafiascum.signup.viewGame:handle }

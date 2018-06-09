@@ -19,13 +19,12 @@ class viewQueue
     /* @var \phpbb\controller\helper */
     protected $helper;
 
-    /* @var \phpbb\auth $auth*/
+    /* @var \phpbb\auth\auth $auth*/
     protected $auth;
 
-    /* @var \phpbb\template\template $template*/
-    protected $template;
-    
-    public function __construct(\phpbb\request\request $request, \phpbb\user $user, \phpbb\db\driver\driver_interface $db, \phpbb\language\language $language, \phpbb\template\template $template, \phpbb\controller\helper $helper, \phpbb\auth $auth, \phpbb\template\template $template)
+    protected $pagination;
+
+    public function __construct(\phpbb\request\request $request, \phpbb\user $user, \phpbb\db\driver\driver_interface $db, \phpbb\language\language $language, \phpbb\template\template $template, \phpbb\controller\helper $helper, \phpbb\auth\auth $auth, \phpbb\pagination $pagination)
     {
         $this->request = $request;
         $this->user = $user;
@@ -34,7 +33,7 @@ class viewQueue
         $this->template = $template;
         $this->helper = $helper;
         $this->auth = $auth;
-        $this->template = $template
+        $this->pagination = $pagination;
     }
 
     public function handle()
@@ -47,7 +46,36 @@ class viewQueue
         define('MAFIA_SLOTS_TABLE', $table_prefix . 'mafia_slots');
         define('MAFIA_FACTIONS_TABLE', $table_prefix . 'mafia_factions');
         define('MAFIA_GAME_TYPES_TABLE', $table_prefix . 'mafia_game_types');
+        //Moderator Constants
+        define('MODERATOR_TYPE_MAIN',0);
+        define('MODERATOR_TYPE_COMOD',1);
+        define('MODERATOR_TYPE_BACKUP',2);
+        //Signup Constants
+        define('STANDARD_IN', 0);
+        define('PREIN', 1);
+        define('REPLACEMENT', 2);
+        define('APPROVED_IN', 3);
+        define('REJECTED_IN', 4);
+        define('REPLACED_OUT', 5);
+        //Slot Constants
+        define('SLOT_STATUS_PENDING', 0);
+        define('SLOT_ALIVE', 1);
+        define('SLOT_DEAD', 2);
+        define('SLOT_OTHER', 3);
+        define('SLOT_OUTCOME_PENDING', 0);
+        define('SLOT_DRAW', 3);
+        define('SLOT_LOSS', 1);
+        define('SLOT_WIN', 2);
 
+        //Progress Constants
+        define('GAME_PROGRESS_PENDING', 1);
+        define('GAME_PROGRESS_QUEUED', 2);
+        define('GAME_PROGRESS_SIGNUPS', 3);
+        define('GAME_PROGRESS_SETUP', 4);
+        define('GAME_PROGRESS_ONGOING', 5);
+        define('GAME_PROGRESS_COMPLETED', 6);
+        
+        
         //Display variables.
         $queue = $this->request->variable('q', 0);
         $gameID = $this->request->variable('g', 0);
@@ -62,10 +90,10 @@ class viewQueue
 
         $main_user_id = $this->user->data['user_id'];
         
-        $gameManager = new \mafiascum\signup\includes\gameManager($this->db, $phpbb_root_path, $phpEx);
-        $gameDisplay = new \mafiascum\signup\includes\gameDisplay($this->db, $phpbb_root_path, $phpEx);
-        $queueManager = new \mafiascum\signup\includes\queueManager($this->db, $phpbb_root_path, $phpEx);
-        $queueDisplay = new \mafiascum\signup\includes\queueDisplay($this->db, $phpbb_root_path, $phpEx);
+        $gameManager = new \mafiascum\signup\includes\gameManager($this->db, $phpbb_root_path, $phpEx, $this->template, $this->pagination);
+        $gameDisplay = new \mafiascum\signup\includes\gameDisplay($this->db, $phpbb_root_path, $phpEx, $this->template, $this->pagination);
+        $queueManager = new \mafiascum\signup\includes\queueManager($this->db, $phpbb_root_path, $phpEx, $this->template, $this->pagination);
+        $queueDisplay = new \mafiascum\signup\includes\queueDisplay($this->db, $phpbb_root_path, $phpEx, $this->template, $this->pagination);
 
 
         if ($main_user_id == ANONYMOUS){
@@ -129,7 +157,7 @@ class viewQueue
                         
                     ));
                     
-                    $template->assign_vars(array(   
+                    $this->template->assign_vars(array(   
                             'MAIN_MODERATOR'    => $data['main_mod'],
                             'GAME_NAME'         => $data['game_name'],
                             'GAME_TYPE'         => $gameDisplay->getGameTypeName($data['game_type']),
@@ -140,7 +168,7 @@ class viewQueue
                     confirm_box(false, 'APPROVE_SUBMISSION', $hiddenFields, 'game_moderate_approve.html');
                 }
                 
-                $template->assign_vars(array(
+                $this->template->assign_vars(array(
                     'U_FIND_USERNAME'   => append_sid("{$phpbb_root_path}memberlist.$phpEx", 'mode=searchuser&amp;form=ucp&amp;field=main_moderator&amp;select_single=true'),
                     'U_USERNAME'        => $this->user->data['username'],
                     'GAME_TYPE_SELECT'  => $gameDisplay->createGameTypeSelect($queue),
@@ -159,14 +187,14 @@ class viewQueue
                 foreach ($temp_game_ids as $game_id) {
                     $game_ids[] = $game_id['game_id'];
                 }
-                $game = $gameManager->loadGame($this->template,0, 0, 0, 0, 0, $start, $limit, 'recent_games', $moderate, $game_ids);
+                $game = $gameManager->loadGame(0, 0, 0, 0, 0, $start, $limit, 'recent_games', $moderate, $game_ids);
                 if (is_array($game[0])){
                     $queue_info = $game[0];
                 } else{
                     $queue_info = $game;
                 }
-                $queueManager->generateQueueList($this->template,'queues', $queue);
-                $template->assign_vars(array(
+                $queueManager->generateQueueList('queues', $queue);
+                $this->template->assign_vars(array(
                     'QUEUE_NAME'    => $queue_info['type_name'],
                     'QUEUE_ID'      => $queue,
                     'MODERATION' => $moderate, //Show mod actions or not.
@@ -190,7 +218,7 @@ class viewQueue
                 foreach ($temp_game_ids as $game_id) {
                     $game_ids[] = $game_id['game_id'];
                 }
-                $gameManager->loadGame($this->template,0, 0, 0, 0, 0, $start, $limit, 'player_games',false, $game_ids);
+                $gameManager->loadGame(0, 0, 0, 0, 0, $start, $limit, 'player_games',false, $game_ids);
                 $sql = 'Select game_id FROM  ' . MAFIA_MODERATORS_TABLE . ' WHERE user_id =' . $user_id;
                 $res = $this->db->sql_query($sql);
                 $temp_game_ids = $this->db->sql_fetchrowset($res);
@@ -198,7 +226,7 @@ class viewQueue
                 foreach ($temp_game_ids as $game_id) {
                     $game_ids[] = $game_id['game_id'];
                 }
-                $gameManager->loadGame($this->template,0, 0, 0, 0, 0, $start, $limit, 'mod_games',false, $game_ids);
+                $gameManager->loadGame(0, 0, 0, 0, 0, $start, $limit, 'mod_games',false, $game_ids);
                 page_header('Your Games', true, 0, 'forum', '', 'NOINDEX, FOLLOW');
                 $templateFile = 'users_games.html';
             break;
@@ -210,13 +238,13 @@ class viewQueue
                     }
                     $moderate = $this->auth->acl_get('m_queue_'.$queue);
 
-                    $game = $gameManager->loadGame($this->template, $queue, 0, 0, $d_approval, $d_status, $start, $limit, 'recent_games', $moderate, array());
+                    $game = $gameManager->loadGame($queue, 0, 0, $d_approval, $d_status, $start, $limit, 'recent_games', $moderate, array());
                     if (is_array($game[0])){
                         $queue_info = $game[0];
                     } else{
                         $queue_info = $game;
                     }
-                    $queueManager->generateQueueList($this->template,'queues', $queue);
+                    $queueManager->generateQueueList('queues', $queue);
                     $this->template->assign_vars(array(
                         'QUEUE_NAME'    => $queue_info['type_name'],
                         'QUEUE_ID'      => $queue,
@@ -241,10 +269,11 @@ class viewQueue
                         'S_SORT_ACTION'     => append_sid('viewqueue.'.$phpEx),
                         'APPROVAL_STATUS'   => $d_approval,
                     ));
-                    $this->templateFile = 'game_queue.html';
+                    $templateFile = 'game_queue.html';
                 }
             break;
         }
+        return $this->helper->render($templateFile, "viewqueue");
     }
 }
 ?>

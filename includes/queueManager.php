@@ -10,7 +10,7 @@ namespace mafiascum\signup\includes;
 
 use phpbb\db\driver\factory as database;
 
-class gameManager{
+class queueManager{
 
 	/** @var \phpbb\db\driver\factory */
 	protected $db;
@@ -18,6 +18,10 @@ class gameManager{
 	protected $root_path;
 	/** @var string */
 	protected $php_ext;
+	/** @var \phpbb\db\driver\factory */
+	protected $template;
+	/** @var string */
+	protected $pagination;
 	/**
 	 * Constructor of the helper class.
 	 *
@@ -28,24 +32,26 @@ class gameManager{
 	 * @return void
 	 */
 
-	public function __construct(database $db, $root_path, $php_ext)
+	public function __construct(database $db, $root_path, $php_ext, $template, $pagination){
 		$this->db = $db;
 		$this->root_path = $root_path;
 		$this->php_ext = $php_ext;
+		$this->template = $template;
+		$this->pagination = $pagination;
 	}
-	public function generateQueueList($template, $template_block = 'queues', $activeID = 0){
+	public function generateQueueList($template_block = 'queues', $activeID = 0){
 		$sql = 'SELECT * FROM '.MAFIA_GAME_TYPES_TABLE;
 		$result = $this->db->sql_query($sql);
 		while($queues = $this->db->sql_fetchrow($result))
 		{
-			$template->assign_block_vars($template_block, array(
+			$this->template->assign_block_vars($template_block, array(
 				'QUEUE_NAME' 	=> $queues['type_name'],
 				'QUEUE_ID'		=> $queues['type_id'],
 				'QUEUE_LINK' 	=> append_sid('viewqueue.' . $this->php_ext . '?q=' . $queues['type_id']),
 				'IS_ACTIVE'		=> ($activeID == $queues['type_id']) ? true : false,
 			));
 		}
-		$template->assign_vars(array(
+		$this->template->assign_vars(array(
 			'REPLACEMENT_LINK' => append_sid('viewqueue.' . $this->php_ext . '?mode=replacement'),
 		));
 		$this->db->sql_freeresult($result);

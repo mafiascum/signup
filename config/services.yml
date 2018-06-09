@@ -9,5 +9,15 @@ services:
             - '@template'
             - '@controller.helper'
             - '@auth'
+            - '@pagination'
+    mafiascum.signup.viewGame:
+        class: mafiascum\signup\controller\viewGame
+        arguments:
+            - '@request'
+            - '@user'
+            - '@dbal.conn'
+            - '@language'
             - '@template'
-
+            - '@controller.helper'
+            - '@auth'
+            - '@pagination'

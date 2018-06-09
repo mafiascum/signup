@@ -18,6 +18,10 @@ class gameDisplay{
 	protected $root_path;
 	/** @var string */
 	protected $php_ext;
+	/** @var \phpbb\db\driver\factory */
+	protected $template;
+	/** @var string */
+	protected $pagination;
 	/**
 	 * Constructor of the helper class.
 	 *
@@ -28,10 +32,12 @@ class gameDisplay{
 	 * @return void
 	 */
 
-	public function __construct(database $db, $root_path, $php_ext)
+	public function __construct(database $db, $root_path, $php_ext, $template, $pagination){
 		$this->db = $db;
 		$this->root_path = $root_path;
 		$this->php_ext = $php_ext;
+		$this->template = $template;
+		$this->pagination = $pagination;
 	}
 	public function createGameTypeSelect($gtype = 0){
 		$html = '';
@@ -58,7 +64,7 @@ class gameDisplay{
 	public function createStatusDetailOptions($status = 0){
 		$html = '';
 
-		$sql = 'SELECT status_id, status_name FROM ' . MAFIA_GAME_STATUS_TABLE . '
+		/*$sql = 'SELECT status_id, status_name FROM ' . MAFIA_GAME_STATUS_TABLE . '
 				ORDER BY status_id ASC';
 
 		$result = $this->db->sql_query($sql);
@@ -66,7 +72,7 @@ class gameDisplay{
 		{
 			$html .= '<option value="'.$type['status_id'].'"'.(($type['status_id'] == $status) ? ' selected="selected"' : '').'>'.$type['status_name'].'</option>';
 		}
-		$this->db->sql_freeresult($result);
+		$this->db->sql_freeresult($result);*/
 		return $html;
 	}
 	public function createPlayerStatusOptions($status = 0){
@@ -141,7 +147,7 @@ class gameDisplay{
 		
 		while($mod = $this->db->sql_fetchrow($res))
 		{
-			$template->assign_block_vars('mods', array(
+			$this->template->assign_block_vars('mods', array(
 			'MODERATOR' 	=> get_username_string('full', $mod['user_id'], $mod['username'], $mod['user_colour']),
 			'USER_ID'		=> $mod['user_id'],
 			'MOD_TYPE'		=> getModTypeName($mod['type']),
@@ -151,12 +157,12 @@ class gameDisplay{
 		}
 		$this->db->sql_freeresult($res);
 	}
-	public function displayModerators($template, $gameID, $prev_data = false){
+	public function displayModerators($gameID, $prev_data = false){
 		$db_result = ($prev_data) ? $prev_data : load_moderators($gameID);
 		while($moderator_row = $this->db->sql_fetchrow($db_result))
 		{
 			$moderatorId = $moderator_row['moderator_id'];
-			$template->assign_block_vars('moderators', array(
+			$this->template->assign_block_vars('moderators', array(
 			
 				
 			
@@ -324,7 +330,7 @@ class gameDisplay{
 				}
 				$playerStatusSelect	.= ">Dead</option> </select>";
 				
-			$template->assign_block_vars('players', array(
+			$this->template->assign_block_vars('players', array(
 				'USER'		=> get_username_string('full', $player['user_id'], $player['username']),
 				'USER_ID'	=> $player['user_id'],
 				'ROLE_NAME'	=> $player['role_name'], //Actual Role name - //TODO -- Add Role name lookup.
