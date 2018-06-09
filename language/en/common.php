@@ -16,4 +16,12 @@ if (empty($lang) || !is_array($lang))
 {
 	$lang = array();
 }
+	$lang = array_merge($lang, array(
+		'GAME_STATUS' 		=>	'Status',
+		'MAIN_MOD'			=>	'Mod',
+		'GAME_TYPE'			=>	'Game Type',
+		'ALL_STATUSES'		=>	'All Statuses',
+		'NOT_APPROVED'		=>	'Not Approved',
+		'APPROVED'			=>	'Approved',
+	));
 
