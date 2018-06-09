@@ -1,3 +1,3 @@
 view_queue_route:
-    path: /viewQueue
+    path: /viewqueue
     defaults: { _controller: mafiascum.signup.viewQueue:handle }
